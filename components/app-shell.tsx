@@ -1,32 +1,49 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Icon } from './icons';
 import { useWorkspace } from '@/lib/workspace';
 
-const nav = [
+const mainNav = [
   ['/dashboard', 'หน้าหลัก', 'home'],
   ['/projects', 'โครงการ', 'project'],
   ['/rooms', 'ห้องพัก', 'rooms'],
   ['/tenants', 'ผู้เช่า', 'users'],
+  ['/meters', 'มิเตอร์น้ำ / ไฟ', 'meter'],
   ['/billing', 'การเงิน', 'finance'],
   ['/maintenance', 'แจ้งซ่อม', 'wrench'],
-  ['/settings', 'ตั้งค่า', 'settings']
+] as const;
+
+const systemNav = [
+  ['/notifications', 'แจ้งเตือน', 'bell'],
+  ['/settings', 'ตั้งค่า', 'settings'],
 ] as const;
 
 const mobileNav = [
   ['/dashboard', 'หน้าหลัก', 'home'],
   ['/projects', 'โครงการ', 'project'],
-  ['/rooms', 'ห้องพัก', 'rooms'],
+  ['/rooms', 'ห้อง', 'rooms'],
+  ['/meters', 'มิเตอร์', 'meter'],
   ['/billing', 'การเงิน', 'finance'],
-  ['/maintenance', 'แจ้งซ่อม', 'wrench']
+  ['/maintenance', 'ซ่อม', 'wrench'],
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const workspace = useWorkspace();
+  const [unread,setUnread]=useState(0);
+
+  useEffect(()=>{
+    async function loadUnread(){
+      if(!workspace.supabase||!workspace.activePropertyId){setUnread(0);return;}
+      const {count}=await workspace.supabase.from('notifications').select('id',{count:'exact',head:true}).eq('property_id',workspace.activePropertyId).is('read_at',null);
+      setUnread(count||0);
+    }
+    void loadUnread();
+  },[workspace.activePropertyId,workspace.supabase,pathname]);
 
   async function logout() {
     try {
@@ -48,18 +65,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <div className="nav-caption">เมนูหลัก</div>
         <nav className="nav-list">
-          {nav.slice(0, 6).map(([href, label, icon]) => (
+          {mainNav.map(([href, label, icon]) => (
             <Link key={href} href={href} className={pathname.startsWith(href) ? 'nav-item active' : 'nav-item'}>
-              <span className="nav-icon"><Icon name={icon} size={18}/></span><span>{label}</span>
+              <span className="nav-icon"><Icon name={icon} size={18}/></span><span>{label}</span>{href==='/meters'&&<span className="nav-new">ใหม่</span>}
             </Link>
           ))}
         </nav>
 
         <div className="nav-caption nav-caption-secondary">ระบบ</div>
         <nav className="nav-list">
-          {nav.slice(6).map(([href, label, icon]) => (
+          {systemNav.map(([href, label, icon]) => (
             <Link key={href} href={href} className={pathname.startsWith(href) ? 'nav-item active' : 'nav-item'}>
-              <span className="nav-icon"><Icon name={icon} size={18}/></span><span>{label}</span>
+              <span className="nav-icon"><Icon name={icon} size={18}/></span><span>{label}</span>{href==='/notifications'&&unread>0&&<span className="nav-count">{unread>99?'99+':unread}</span>}
             </Link>
           ))}
         </nav>
@@ -71,7 +88,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="sidebar-progress"><i style={{width: workspace.properties.length ? '82%' : '0%'}}/></div>
           <Link className="sidebar-card-link" href="/projects">จัดการโครงการ <Icon name="chevron" size={14}/></Link>
         </div>
-        <div className="sidebar-foot">DormPlus <b>v0.3 CRUD</b><br/><span>Supabase · Vercel</span></div>
+        <div className="sidebar-foot">DormPlus <b>v0.6 Meter Menu</b><br/><span>Supabase · Vercel</span></div>
       </aside>
 
       <main className="main">
@@ -94,7 +111,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="top-actions">
-            <button className="icon-btn notification-btn" aria-label="notifications"><Icon name="bell"/></button>
+            <Link href="/notifications" className="icon-btn notification-btn" aria-label="notifications"><Icon name="bell"/>{unread>0&&<i/>}</Link>
             <div className="profile-wrap">
               <div className="avatar">{workspace.userName.slice(0,2).toUpperCase()}</div>
               <div className="profile"><strong>{workspace.userName}</strong><span>ผู้ใช้งานระบบ</span></div>
@@ -105,7 +122,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="content">{workspace.error && <div className="connection-alert"><b>เชื่อมต่อ Supabase ไม่สำเร็จ</b><span>{workspace.error}</span></div>}{children}</div>
       </main>
 
-      <nav className="mobile-nav">
+      <nav className="mobile-nav meter-mobile-nav">
         {mobileNav.map(([href, label, icon]) => (
           <Link key={href} href={href} className={pathname.startsWith(href) ? 'mobile-nav-item active' : 'mobile-nav-item'}>
             <span className="mobile-nav-icon"><Icon name={icon} size={19}/></span><span>{label}</span>

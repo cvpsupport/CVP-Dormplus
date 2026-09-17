@@ -27,7 +27,10 @@ export function Icon({ name, size = 20 }: IconProps) {
     receipt: <><path d="M6 3h12v18l-2-1.5L14 21l-2-1.5L10 21l-2-1.5L6 21V3Z"/><path d="M9 8h6M9 12h6M9 16h4"/></>,
     clock: <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>,
     check: <><path d="m5 12 4 4L19 6"/></>,
-    shield: <><path d="M12 3 4.5 6v5c0 4.6 3.1 8.8 7.5 10 4.4-1.2 7.5-5.4 7.5-10V6L12 3Z"/><path d="m9 12 2 2 4-4"/></>
+    shield: <><path d="M12 3 4.5 6v5c0 4.6 3.1 8.8 7.5 10 4.4-1.2 7.5-5.4 7.5-10V6L12 3Z"/><path d="m9 12 2 2 4-4"/></>,
+    meter: <><path d="M5 4h14v16H5z"/><path d="M8 8h8M9 15h6"/><circle cx="12" cy="12" r="2"/></>,
+    water: <><path d="M12 3s-5 5.7-5 10a5 5 0 0 0 10 0c0-4.3-5-10-5-10Z"/><path d="M9.5 14.5c.7 1 1.6 1.5 2.8 1.5"/></>,
+    bolt: <><path d="M13 2 5 14h6l-1 8 8-12h-6z"/></>
   };
   return <svg {...common}>{paths[name] ?? paths.home}</svg>;
 }

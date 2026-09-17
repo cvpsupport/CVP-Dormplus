@@ -17,6 +17,10 @@ export type WorkspaceProperty = {
   due_day?: number;
   electricity_rate?: number;
   water_rate?: number;
+  water_minimum_charge?: number;
+  water_service_fee?: number;
+  meter_high_usage_water?: number;
+  meter_high_usage_electricity?: number;
 };
 
 const STORAGE_KEY = 'dormplus.activePropertyId';
@@ -63,7 +67,7 @@ export function useWorkspace(options: { requireAuth?: boolean } = {}) {
 
     const { data, error: queryError } = await supabase
       .from('properties')
-      .select('id,name,code,address,status,project_type,phone,description,billing_day,due_day,electricity_rate,water_rate')
+      .select('id,name,code,address,status,project_type,phone,description,billing_day,due_day,electricity_rate,water_rate,water_minimum_charge,water_service_fee,meter_high_usage_water,meter_high_usage_electricity')
       .order('created_at', { ascending: true });
 
     if (queryError) {
