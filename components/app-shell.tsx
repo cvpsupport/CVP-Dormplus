@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Icon } from './icons';
+import { useWorkspace } from '@/lib/workspace';
 
 const nav = [
   ['/dashboard', 'หน้าหลัก', 'home'],
@@ -24,6 +25,19 @@ const mobileNav = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const workspace = useWorkspace();
+
+  async function logout() {
+    try {
+      if (workspace.supabase) await workspace.supabase.auth.signOut({ scope: 'local' });
+    } finally {
+      window.localStorage.removeItem('dormplus.activePropertyId');
+      router.replace('/login');
+      router.refresh();
+    }
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -37,7 +51,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {nav.slice(0, 6).map(([href, label, icon]) => (
             <Link key={href} href={href} className={pathname.startsWith(href) ? 'nav-item active' : 'nav-item'}>
               <span className="nav-icon"><Icon name={icon} size={18}/></span><span>{label}</span>
-              {href === '/maintenance' && <span className="nav-count">3</span>}
             </Link>
           ))}
         </nav>
@@ -53,39 +66,43 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <div className="sidebar-card">
           <div className="sidebar-card-top"><span className="live-dot"/><span>Portfolio overview</span></div>
-          <strong>3 โครงการที่กำลังดูแล</strong>
-          <span>116 ห้อง · ผู้เช่า 105 คน</span>
-          <div className="sidebar-progress"><i/></div>
-          <div className="sidebar-progress-meta"><span>อัตราเข้าพักรวม</span><b>91%</b></div>
+          <strong>{workspace.properties.length} โครงการที่กำลังดูแล</strong>
+          <span>{workspace.activeProperty?.name || 'ยังไม่ได้สร้างโครงการ'}</span>
+          <div className="sidebar-progress"><i style={{width: workspace.properties.length ? '82%' : '0%'}}/></div>
           <Link className="sidebar-card-link" href="/projects">จัดการโครงการ <Icon name="chevron" size={14}/></Link>
         </div>
-        <div className="sidebar-foot">DormPlus <b>v0.2</b><br/><span>Supabase · Vercel</span></div>
+        <div className="sidebar-foot">DormPlus <b>v0.3 CRUD</b><br/><span>Supabase · Vercel</span></div>
       </aside>
 
       <main className="main">
         <header className="topbar">
           <div className="mobile-brand"><div className="brand-mark"><Icon name="home" size={18}/></div><b>DormPlus</b></div>
-          <Link href="/projects" className="project-switcher">
-            <span className="project-switcher-kicker">โครงการปัจจุบัน</span>
-            <strong>Green Park Residence</strong>
+          <div className="project-switcher project-switcher-live">
+            <div className="project-switcher-copy">
+              <span className="project-switcher-kicker">โครงการปัจจุบัน</span>
+              {workspace.loading ? <strong>กำลังโหลด...</strong> : workspace.properties.length ? (
+                <select value={workspace.activePropertyId || ''} onChange={e => workspace.setActivePropertyId(e.target.value)}>
+                  {workspace.properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              ) : <Link href="/projects"><strong>+ สร้างโครงการแรก</strong></Link>}
+            </div>
             <span className="project-switcher-status"><i/> ออนไลน์</span>
-            <Icon name="chevron" size={15}/>
-          </Link>
+          </div>
 
           <div className="topbar-search">
             <Icon name="search" size={17}/><span>ค้นหาห้อง ผู้เช่า หรือบิล...</span><kbd>⌘ K</kbd>
           </div>
 
           <div className="top-actions">
-            <button className="icon-btn notification-btn" aria-label="notifications"><Icon name="bell"/><i/></button>
+            <button className="icon-btn notification-btn" aria-label="notifications"><Icon name="bell"/></button>
             <div className="profile-wrap">
-              <div className="avatar">KS</div>
-              <div className="profile"><strong>คุณกอบ</strong><span>เจ้าของโครงการ</span></div>
-              <Icon name="chevron-down" size={15}/>
+              <div className="avatar">{workspace.userName.slice(0,2).toUpperCase()}</div>
+              <div className="profile"><strong>{workspace.userName}</strong><span>ผู้ใช้งานระบบ</span></div>
             </div>
+            <button className="logout-action" onClick={logout} title="ออกจากระบบ" aria-label="ออกจากระบบ"><Icon name="logout" size={17}/><span>ออกจากระบบ</span></button>
           </div>
         </header>
-        <div className="content">{children}</div>
+        <div className="content">{workspace.error && <div className="connection-alert"><b>เชื่อมต่อ Supabase ไม่สำเร็จ</b><span>{workspace.error}</span></div>}{children}</div>
       </main>
 
       <nav className="mobile-nav">

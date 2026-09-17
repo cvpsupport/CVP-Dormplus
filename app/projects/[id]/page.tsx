@@ -1,90 +1,41 @@
+'use client';
+
+import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { Badge, StatCard } from '@/components/ui';
 import { Icon } from '@/components/icons';
-import { projectTasks, projects } from '@/lib/mock-data';
+import { CrudMenu, EmptyState, FormActions, Modal, Toast } from '@/components/crud-ui';
+import { useWorkspace } from '@/lib/workspace';
 
-const statusLabel = { active: 'เปิดให้บริการ', planning: 'เตรียมเปิด', renovation: 'ปรับปรุง' } as const;
-const statusTone = { active: 'green', planning: 'blue', renovation: 'amber' } as const;
+type Project={id:string;name:string;code:string|null;project_type:string;status:string;address:string|null;description:string|null;opened_at:string|null;phone:string|null};
+type Building={id:string;name:string;code:string|null;floor_count:number;status:string;description:string|null};
+type Task={id:string;title:string;description:string|null;status:string;priority:string;due_date:string|null};
+const statusLabel:Record<string,string>={active:'เปิดให้บริการ',planning:'เตรียมเปิด',renovation:'ปรับปรุง',inactive:'ปิดใช้งาน'};
+const statusTone:Record<string,string>={active:'green',planning:'blue',renovation:'amber',inactive:'gray'};
+const typeLabel:Record<string,string>={dormitory:'หอพัก',apartment:'อพาร์ตเมนต์',student_apartment:'อพาร์ตเมนต์นักศึกษา',serviced_apartment:'เซอร์วิสอพาร์ตเมนต์',other:'อื่น ๆ'};
 
-export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const project = projects.find(p => p.id === id);
-  if (!project) notFound();
-
-  const occupancy = project.totalRooms ? Math.round(project.occupiedRooms / project.totalRooms * 100) : 0;
-  const tasks = projectTasks.filter(t => t.projectId === project.id);
-  const vacant = project.totalRooms - project.occupiedRooms;
-
-  return <AppShell>
-    <div className="project-detail-header">
-      <div>
-        <Link href="/projects" className="back-link">← กลับไปหน้าโครงการ</Link>
-        <div className="project-detail-title"><div><h1>{project.name}</h1><p>{project.code} · {project.type} · {project.address}</p></div><Badge tone={statusTone[project.status]}>{statusLabel[project.status]}</Badge></div>
-      </div>
-      <button className="primary-btn">แก้ไขโครงการ</button>
-    </div>
-
-    <div className="project-summary-banner">
-      <div className="project-summary-art"><Icon name="project" size={44}/></div>
-      <div className="project-summary-copy"><span>ภาพรวมโครงการ</span><h2>{project.name}</h2><p>{project.description}</p></div>
-      <div className="project-summary-meta"><div><span>เปิดโครงการ</span><b>{project.openedAt}</b></div><div><span>ผู้ดูแล</span><b>{project.manager}</b></div></div>
-    </div>
-
-    <section className="stats-grid project-detail-stats">
-      <StatCard icon="rooms" label="ห้องทั้งหมด" value={`${project.totalRooms} ห้อง`} note={`${vacant} ห้องว่าง`} />
-      <StatCard icon="users" label="อัตราเข้าพัก" value={`${occupancy}%`} note={`${project.occupiedRooms} ห้องมีผู้เช่า`} tone="blue" />
-      <StatCard icon="finance" label="รายได้เดือนนี้" value={`฿${project.monthlyRevenue.toLocaleString()}`} note="รายได้จากค่าเช่าและบริการ" tone="amber" />
-      <StatCard icon="project" label="โครงสร้าง" value={`${project.buildings} อาคาร`} note={`${project.floors} ชั้นต่ออาคารโดยประมาณ`} />
-    </section>
-
-    <div className="project-detail-grid">
-      <section className="panel">
-        <div className="panel-head"><div><h3>อาคารและพื้นที่</h3><p>โครงสร้างภายในโครงการ</p></div><button className="link-btn">+ เพิ่มอาคาร</button></div>
-        <div className="building-list">
-          {Array.from({ length: project.buildings }).map((_, index) => <div className="building-row" key={index}>
-            <div className="building-icon"><Icon name="project" size={20}/></div>
-            <div className="building-info"><b>อาคาร {String.fromCharCode(65 + index)}</b><span>{project.floors} ชั้น · {Math.ceil(project.totalRooms / project.buildings)} ห้อง</span></div>
-            <Badge tone="green">ใช้งาน</Badge>
-            <button className="icon-btn"><Icon name="chevron" size={16}/></button>
-          </div>)}
-        </div>
-      </section>
-
-      <section className="panel">
-        <div className="panel-head"><div><h3>ข้อมูลโครงการ</h3><p>รายละเอียดสำคัญสำหรับทีมบริหาร</p></div><button className="link-btn">แก้ไข</button></div>
-        <div className="project-info-list">
-          <div><span>รหัสโครงการ</span><b>{project.code}</b></div>
-          <div><span>ประเภท</span><b>{project.type}</b></div>
-          <div><span>ที่ตั้ง</span><b>{project.address}</b></div>
-          <div><span>ผู้ดูแลหลัก</span><b>{project.manager}</b></div>
-          <div><span>สถานะ</span><Badge tone={statusTone[project.status]}>{statusLabel[project.status]}</Badge></div>
-        </div>
-      </section>
-    </div>
-
-    <div className="project-detail-grid lower-project-grid">
-      <section className="panel project-task-panel">
-        <div className="panel-head"><div><h3>งานโครงการ</h3><p>ติดตามงานเปิดโครงการ ปรับปรุง และงานบริหาร</p></div><button className="primary-btn small-btn"><Icon name="plus" size={15}/> เพิ่มงาน</button></div>
-        {tasks.length ? <div className="project-task-list">{tasks.map(task => <div className="project-task" key={task.id}>
-          <div className="task-check"><Icon name="task" size={18}/></div>
-          <div className="task-main"><b>{task.title}</b><span>{task.id} · ผู้รับผิดชอบ {task.assignee}</span></div>
-          <div className="task-due"><span>กำหนดเสร็จ</span><b>{task.due}</b></div>
-          <Badge tone={task.priority === 'สูง' ? 'red' : 'amber'}>{task.priority}</Badge>
-          <Badge tone={task.status === 'กำลังทำ' ? 'blue' : 'gray'}>{task.status}</Badge>
-        </div>)}</div> : <div className="empty-state"><Icon name="task" size={28}/><b>ยังไม่มีงานของโครงการนี้</b><span>สร้างงานเพื่อวางแผนเปิดหรือปรับปรุงโครงการ</span></div>}
-      </section>
-
-      <section className="panel">
-        <div className="panel-head"><div><h3>ทางลัด</h3><p>ไปยังข้อมูลที่เกี่ยวข้อง</p></div></div>
-        <div className="project-shortcuts">
-          <Link href="/rooms"><Icon name="rooms"/><div><b>ห้องพัก</b><span>ดูสถานะห้องทั้งหมด</span></div><Icon name="chevron" size={16}/></Link>
-          <Link href="/tenants"><Icon name="users"/><div><b>ผู้เช่า</b><span>รายชื่อและสัญญา</span></div><Icon name="chevron" size={16}/></Link>
-          <Link href="/billing"><Icon name="finance"/><div><b>การเงิน</b><span>รายรับและใบแจ้งหนี้</span></div><Icon name="chevron" size={16}/></Link>
-          <Link href="/maintenance"><Icon name="wrench"/><div><b>แจ้งซ่อม</b><span>งานซ่อมภายในโครงการ</span></div><Icon name="chevron" size={16}/></Link>
-        </div>
-      </section>
-    </div>
-  </AppShell>;
+export default function ProjectDetailPage(){
+  const {id}=useParams<{id:string}>(); const workspace=useWorkspace(); const [project,setProject]=useState<Project|null>(null); const [buildings,setBuildings]=useState<Building[]>([]); const [tasks,setTasks]=useState<Task[]>([]); const [roomStats,setRoomStats]=useState({total:0,occupied:0}); const [revenue,setRevenue]=useState(0); const [modal,setModal]=useState<'project'|'building'|'task'|null>(null); const [editingBuilding,setEditingBuilding]=useState<Building|null>(null); const [editingTask,setEditingTask]=useState<Task|null>(null); const [projectForm,setProjectForm]=useState({name:'',code:'',address:'',description:'',status:'active'}); const [buildingForm,setBuildingForm]=useState({name:'',code:'',floor_count:'1',status:'active',description:''}); const [taskForm,setTaskForm]=useState({title:'',description:'',status:'todo',priority:'medium',due_date:''}); const [saving,setSaving]=useState(false); const [toast,setToast]=useState<{message:string;tone:'success'|'error'}|null>(null);
+  async function load(){if(!workspace.supabase||!id)return;const [p,b,t,rooms,occ,inv]=await Promise.all([workspace.supabase.from('properties').select('id,name,code,project_type,status,address,description,opened_at,phone').eq('id',id).single(),workspace.supabase.from('buildings').select('id,name,code,floor_count,status,description').eq('property_id',id).order('name'),workspace.supabase.from('project_tasks').select('id,title,description,status,priority,due_date').eq('property_id',id).order('created_at',{ascending:false}),workspace.supabase.from('rooms').select('*',{count:'exact',head:true}).eq('property_id',id).is('archived_at',null),workspace.supabase.from('rooms').select('*',{count:'exact',head:true}).eq('property_id',id).eq('status','occupied').is('archived_at',null),workspace.supabase.from('invoices').select('total,status').eq('property_id',id)]);if(p.error){setToast({message:p.error.message,tone:'error'});return}setProject(p.data as Project);setBuildings((b.data||[]) as Building[]);setTasks((t.data||[]) as Task[]);setRoomStats({total:rooms.count||0,occupied:occ.count||0});setRevenue(((inv.data||[]) as {total:number;status:string}[]).filter(x=>x.status==='paid').reduce((s,x)=>s+Number(x.total),0));}
+  useEffect(()=>{if(!workspace.loading)void load()},[workspace.loading,id]);
+  function openProject(){if(!project)return;setProjectForm({name:project.name,code:project.code||'',address:project.address||'',description:project.description||'',status:project.status});setModal('project')}
+  function newBuilding(){setEditingBuilding(null);setBuildingForm({name:'',code:'',floor_count:'1',status:'active',description:''});setModal('building')} function editBuilding(b:Building){setEditingBuilding(b);setBuildingForm({name:b.name,code:b.code||'',floor_count:String(b.floor_count),status:b.status,description:b.description||''});setModal('building')}
+  function newTask(){setEditingTask(null);setTaskForm({title:'',description:'',status:'todo',priority:'medium',due_date:''});setModal('task')} function editTask(t:Task){setEditingTask(t);setTaskForm({title:t.title,description:t.description||'',status:t.status,priority:t.priority,due_date:t.due_date||''});setModal('task')}
+  async function saveProject(e:FormEvent){e.preventDefault();if(!workspace.supabase)return;setSaving(true);const {error}=await workspace.supabase.from('properties').update({name:projectForm.name.trim(),code:projectForm.code.trim()||null,address:projectForm.address.trim()||null,description:projectForm.description.trim()||null,status:projectForm.status,updated_at:new Date().toISOString()}).eq('id',id);if(error)setToast({message:error.message,tone:'error'});else{setToast({message:'แก้ไขโครงการแล้ว',tone:'success'});setModal(null);await load();await workspace.refresh()}setSaving(false)}
+  async function saveBuilding(e:FormEvent){e.preventDefault();if(!workspace.supabase)return;setSaving(true);const payload={name:buildingForm.name.trim(),code:buildingForm.code.trim()||null,floor_count:Number(buildingForm.floor_count)||1,status:buildingForm.status,description:buildingForm.description.trim()||null,updated_at:new Date().toISOString()};const r=editingBuilding?await workspace.supabase.from('buildings').update(payload).eq('id',editingBuilding.id):await workspace.supabase.from('buildings').insert({...payload,property_id:id});if(r.error)setToast({message:r.error.message,tone:'error'});else{setToast({message:editingBuilding?'แก้ไขอาคารแล้ว':'เพิ่มอาคารแล้ว',tone:'success'});setModal(null);await load()}setSaving(false)}
+  async function removeBuilding(b:Building){if(!workspace.supabase||!window.confirm(`ลบอาคาร “${b.name}”? ห้องที่ผูกอาคารจะถูกเปลี่ยนเป็นไม่ระบุอาคาร`))return;const {error}=await workspace.supabase.from('buildings').delete().eq('id',b.id);if(error)setToast({message:error.message,tone:'error'});else{setToast({message:'ลบอาคารแล้ว',tone:'success'});await load()}}
+  async function saveTask(e:FormEvent){e.preventDefault();if(!workspace.supabase)return;setSaving(true);const payload={title:taskForm.title.trim(),description:taskForm.description.trim()||null,status:taskForm.status,priority:taskForm.priority,due_date:taskForm.due_date||null,updated_at:new Date().toISOString()};const r=editingTask?await workspace.supabase.from('project_tasks').update(payload).eq('id',editingTask.id):await workspace.supabase.from('project_tasks').insert({...payload,property_id:id});if(r.error)setToast({message:r.error.message,tone:'error'});else{setToast({message:editingTask?'แก้ไขงานแล้ว':'เพิ่มงานแล้ว',tone:'success'});setModal(null);await load()}setSaving(false)}
+  async function removeTask(t:Task){if(!workspace.supabase||!window.confirm(`ลบงาน “${t.title}”?`))return;const {error}=await workspace.supabase.from('project_tasks').delete().eq('id',t.id);if(error)setToast({message:error.message,tone:'error'});else{setToast({message:'ลบงานแล้ว',tone:'success'});await load()}}
+  if(!project)return <AppShell><EmptyState title="กำลังโหลดโครงการ" description="กำลังอ่านข้อมูลจาก Supabase..."/></AppShell>;
+  const occupancy=roomStats.total?Math.round(roomStats.occupied/roomStats.total*100):0;
+  return <AppShell><div className="project-detail-header"><div><Link href="/projects" className="back-link">← กลับไปหน้าโครงการ</Link><div className="project-detail-title"><div><h1>{project.name}</h1><p>{project.code||'NO-CODE'} · {typeLabel[project.project_type]||project.project_type} · {project.address||'ยังไม่ระบุที่อยู่'}</p></div><Badge tone={statusTone[project.status]||'gray'}>{statusLabel[project.status]||project.status}</Badge></div></div><button className="primary-btn" onClick={openProject}>แก้ไขโครงการ</button></div>
+  <div className="project-summary-banner"><div className="project-summary-art"><Icon name="project" size={44}/></div><div className="project-summary-copy"><span>ภาพรวมโครงการ</span><h2>{project.name}</h2><p>{project.description||'ยังไม่มีรายละเอียดโครงการ'}</p></div><div className="project-summary-meta"><div><span>เปิดโครงการ</span><b>{project.opened_at||'-'}</b></div><div><span>สถานะ</span><b>{statusLabel[project.status]||project.status}</b></div></div></div>
+  <section className="stats-grid project-detail-stats"><StatCard icon="rooms" label="ห้องทั้งหมด" value={`${roomStats.total} ห้อง`} note={`${Math.max(0,roomStats.total-roomStats.occupied)} ห้องว่าง`}/><StatCard icon="users" label="อัตราเข้าพัก" value={`${occupancy}%`} note={`${roomStats.occupied} ห้องมีผู้เช่า`} tone="blue"/><StatCard icon="finance" label="ยอดใบแจ้งหนี้ชำระแล้ว" value={`฿${revenue.toLocaleString()}`} note="รวมข้อมูลในระบบ" tone="amber"/><StatCard icon="project" label="โครงสร้าง" value={`${buildings.length} อาคาร`} note="จัดการอาคารด้านล่าง"/></section>
+  <div className="project-detail-grid"><section className="panel"><div className="panel-head"><div><h3>อาคารและพื้นที่</h3><p>โครงสร้างภายในโครงการ</p></div><button className="link-btn" onClick={newBuilding}>+ เพิ่มอาคาร</button></div><div className="building-list">{buildings.length?buildings.map(b=><div className="building-row" key={b.id}><div className="building-icon"><Icon name="project" size={20}/></div><div className="building-info"><b>{b.name}</b><span>{b.floor_count} ชั้น · {b.code||'ไม่ระบุรหัส'}</span></div><Badge tone={b.status==='active'?'green':'gray'}>{b.status==='active'?'ใช้งาน':'ปิดใช้งาน'}</Badge><CrudMenu onEdit={()=>editBuilding(b)} onDelete={()=>void removeBuilding(b)}/></div>):<div className="empty-state"><b>ยังไม่มีอาคาร</b><span>กดเพิ่มอาคารเพื่อเริ่มจัดโครงสร้าง</span></div>}</div></section><section className="panel"><div className="panel-head"><div><h3>ข้อมูลโครงการ</h3><p>รายละเอียดสำคัญ</p></div><button className="link-btn" onClick={openProject}>แก้ไข</button></div><div className="project-info-list"><div><span>รหัสโครงการ</span><b>{project.code||'-'}</b></div><div><span>ประเภท</span><b>{typeLabel[project.project_type]||project.project_type}</b></div><div><span>ที่ตั้ง</span><b>{project.address||'-'}</b></div><div><span>สถานะ</span><Badge tone={statusTone[project.status]||'gray'}>{statusLabel[project.status]||project.status}</Badge></div></div></section></div>
+  <div className="project-detail-grid lower-project-grid"><section className="panel project-task-panel"><div className="panel-head"><div><h3>งานโครงการ</h3><p>ติดตามงานเปิดโครงการและงานบริหาร</p></div><button className="primary-btn small-btn" onClick={newTask}><Icon name="plus" size={15}/> เพิ่มงาน</button></div>{tasks.length?<div className="project-task-list">{tasks.map(t=><div className="project-task" key={t.id}><div className="task-check"><Icon name="task" size={18}/></div><div className="task-main"><b>{t.title}</b><span>{t.description||'ไม่มีรายละเอียด'}</span></div><div className="task-due"><span>กำหนดเสร็จ</span><b>{t.due_date||'-'}</b></div><Badge tone={t.priority==='high'||t.priority==='urgent'?'red':'amber'}>{t.priority}</Badge><Badge tone={t.status==='in_progress'?'blue':t.status==='done'?'green':'gray'}>{t.status}</Badge><CrudMenu onEdit={()=>editTask(t)} onDelete={()=>void removeTask(t)}/></div>)}</div>:<div className="empty-state"><b>ยังไม่มีงานของโครงการนี้</b><span>สร้างงานเพื่อวางแผนและติดตามความคืบหน้า</span></div>}</section><section className="panel"><div className="panel-head"><div><h3>ทางลัด</h3><p>ไปยังข้อมูลที่เกี่ยวข้อง</p></div></div><div className="project-shortcuts"><Link href="/rooms"><Icon name="rooms"/><div><b>ห้องพัก</b><span>ดูสถานะห้องทั้งหมด</span></div><Icon name="chevron" size={16}/></Link><Link href="/tenants"><Icon name="users"/><div><b>ผู้เช่า</b><span>รายชื่อและสัญญา</span></div><Icon name="chevron" size={16}/></Link><Link href="/billing"><Icon name="finance"/><div><b>การเงิน</b><span>รายรับและใบแจ้งหนี้</span></div><Icon name="chevron" size={16}/></Link><Link href="/maintenance"><Icon name="wrench"/><div><b>แจ้งซ่อม</b><span>งานซ่อมภายในโครงการ</span></div><Icon name="chevron" size={16}/></Link></div></section></div>
+  <Modal open={modal==='project'} title="แก้ไขโครงการ" onClose={()=>setModal(null)}><form className="crud-form" onSubmit={saveProject}><div className="form-grid"><label>ชื่อโครงการ<input required value={projectForm.name} onChange={e=>setProjectForm({...projectForm,name:e.target.value})}/></label><label>รหัส<input value={projectForm.code} onChange={e=>setProjectForm({...projectForm,code:e.target.value})}/></label><label className="full">ที่อยู่<input value={projectForm.address} onChange={e=>setProjectForm({...projectForm,address:e.target.value})}/></label><label>สถานะ<select value={projectForm.status} onChange={e=>setProjectForm({...projectForm,status:e.target.value})}><option value="active">เปิดให้บริการ</option><option value="planning">เตรียมเปิด</option><option value="renovation">ปรับปรุง</option><option value="inactive">ปิดใช้งาน</option></select></label><label className="full">รายละเอียด<textarea value={projectForm.description} onChange={e=>setProjectForm({...projectForm,description:e.target.value})}/></label></div><FormActions saving={saving} onCancel={()=>setModal(null)}/></form></Modal>
+  <Modal open={modal==='building'} title={editingBuilding?'แก้ไขอาคาร':'เพิ่มอาคาร'} onClose={()=>setModal(null)}><form className="crud-form" onSubmit={saveBuilding}><div className="form-grid"><label>ชื่ออาคาร<input required value={buildingForm.name} onChange={e=>setBuildingForm({...buildingForm,name:e.target.value})}/></label><label>รหัส<input value={buildingForm.code} onChange={e=>setBuildingForm({...buildingForm,code:e.target.value})}/></label><label>จำนวนชั้น<input type="number" min="1" value={buildingForm.floor_count} onChange={e=>setBuildingForm({...buildingForm,floor_count:e.target.value})}/></label><label>สถานะ<select value={buildingForm.status} onChange={e=>setBuildingForm({...buildingForm,status:e.target.value})}><option value="active">ใช้งาน</option><option value="inactive">ปิดใช้งาน</option></select></label><label className="full">รายละเอียด<textarea value={buildingForm.description} onChange={e=>setBuildingForm({...buildingForm,description:e.target.value})}/></label></div><FormActions saving={saving} onCancel={()=>setModal(null)}/></form></Modal>
+  <Modal open={modal==='task'} title={editingTask?'แก้ไขงาน':'เพิ่มงานโครงการ'} onClose={()=>setModal(null)}><form className="crud-form" onSubmit={saveTask}><div className="form-grid"><label className="full">ชื่องาน<input required value={taskForm.title} onChange={e=>setTaskForm({...taskForm,title:e.target.value})}/></label><label>สถานะ<select value={taskForm.status} onChange={e=>setTaskForm({...taskForm,status:e.target.value})}><option value="todo">รอดำเนินการ</option><option value="in_progress">กำลังทำ</option><option value="blocked">ติดปัญหา</option><option value="done">เสร็จแล้ว</option><option value="cancelled">ยกเลิก</option></select></label><label>ความสำคัญ<select value={taskForm.priority} onChange={e=>setTaskForm({...taskForm,priority:e.target.value})}><option value="low">ต่ำ</option><option value="medium">กลาง</option><option value="high">สูง</option><option value="urgent">เร่งด่วน</option></select></label><label>กำหนดเสร็จ<input type="date" value={taskForm.due_date} onChange={e=>setTaskForm({...taskForm,due_date:e.target.value})}/></label><label className="full">รายละเอียด<textarea value={taskForm.description} onChange={e=>setTaskForm({...taskForm,description:e.target.value})}/></label></div><FormActions saving={saving} onCancel={()=>setModal(null)}/></form></Modal><Toast message={toast?.message||null} tone={toast?.tone} onClose={()=>setToast(null)}/></AppShell>
 }

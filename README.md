@@ -1,86 +1,79 @@
-# DormPlus Webapp
+# DormPlus Web App — Supabase CRUD Edition
 
-ต้นแบบ Web App จัดการหอพักจากภาพอ้างอิง โดยใช้ **Next.js + Supabase + Vercel** และออกแบบ Responsive สำหรับ Desktop/Mobile
+DormPlus is a Next.js 15 property-management web app designed for deployment on Vercel with Supabase as the database/auth backend.
 
-## สิ่งที่มีให้แล้ว
+## What works in this version
 
-- Dashboard ภาพรวม
-- โมดูลโครงการ / Portfolio สำหรับบริหารหลายหอพัก พร้อมหน้ารายละเอียด อาคาร และงานโครงการ
-- จัดการห้องพัก
-- รายชื่อผู้เช่า
-- การเงิน / ใบแจ้งหนี้
-- แจ้งซ่อมแบบ Kanban
-- ตั้งค่าหอพักและรอบบิล
-- Responsive mobile navigation
-- Supabase browser/server clients
-- PostgreSQL schema + RLS migration
-- Mock data fallback เพื่อเปิด UI ได้ก่อนเชื่อม Supabase
+- Supabase Auth: sign in and sign up
+- Multi-project workspace and project switcher
+- Projects: create, edit, delete
+- Project detail: buildings and project tasks CRUD
+- Rooms: create, edit, archive/remove from active list
+- Tenants: create, edit, archive; optionally create an active contract when assigning a room
+- Billing: create, edit, delete invoices based on active contracts
+- Maintenance: create, edit, change status, delete
+- Settings: edit property profile, billing days, electricity/water rates
+- Dashboard: live data from the current project
+- RLS remains enabled; browser CRUD runs under the signed-in user's Supabase session
 
+## Environment variables
 
-### โมดูลโครงการ
+Create `.env.local` locally, or add these in Vercel → Project → Settings → Environment Variables:
 
-- `/projects` ภาพรวมหลายโครงการ / Portfolio
-- `/projects/[id]` รายละเอียดโครงการ อาคาร KPI และงานโครงการ
-- ใช้ `properties` เป็น Project entity หลัก เพื่อไม่ให้ข้อมูลซ้ำ
-- Migration `002_projects_module.sql` เพิ่ม project metadata, buildings, project_tasks, project_documents และ RPC `create_project()`
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
+NEXT_PUBLIC_APP_NAME=DormPlus
+```
 
-## เริ่มใช้งาน
+`SUPABASE_SERVICE_ROLE_KEY` must never be exposed in browser code or committed to GitHub. The current CRUD UI does not require it in the browser.
+
+## Supabase setup
+
+Open Supabase → SQL Editor and apply migrations in this order:
+
+1. `supabase/migrations/001_initial_schema.sql`
+2. `supabase/migrations/002_projects_module.sql`
+3. `supabase/migrations/003_crud_support.sql`
+
+If 001 and 002 were already applied, only run 003.
+
+Migration 003 adds safe archival fields for rooms/tenants and an owner-only project delete policy.
+
+## Run locally
 
 ```bash
 npm install
-cp .env.example .env.local
 npm run dev
 ```
 
-เปิด `http://localhost:3000`
+Open `http://localhost:3000`.
 
-## เชื่อม Supabase
+## First-use flow
 
-1. สร้าง Supabase project
-2. เปิด SQL Editor แล้วรัน migrations ตามลำดับ: `001_initial_schema.sql` และ `002_projects_module.sql`
-3. ใส่ค่าใน `.env.local`
+1. Create an account on `/login` or sign in with an existing Supabase user.
+2. Go to **โครงการ** and create the first project.
+3. Add a building from the project detail page (optional).
+4. Add rooms.
+5. Add tenants. Selecting a vacant room creates an active rental contract automatically.
+6. Go to Billing to create invoices from active contracts.
+7. Add maintenance tickets and update their status.
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
-```
+## Deploy to Vercel
 
-4. ปรับแต่ละหน้าให้ fetch จาก Supabase แทน `lib/mock-data.ts`
+Push the repository to GitHub and import it into Vercel. Framework preset should be Next.js. After adding the environment variables, redeploy.
 
-## Deploy Vercel
+If Supabase email confirmation is enabled, a newly registered user must confirm their email before signing in.
 
-- Push repository ขึ้น GitHub
-- Import project ใน Vercel
-- ตั้ง Environment Variables ตาม `.env.example`
-- Deploy
+## Authentication (v0.4)
 
-## โครงสร้างสำคัญ
+This build includes explicit Supabase Auth route protection:
 
-```text
-app/                 Next.js App Router pages
-components/          UI shell + reusable components
-lib/mock-data.ts     ข้อมูลตัวอย่างสำหรับ prototype
-lib/supabase/        Supabase browser/server clients
-supabase/migrations/ Database schema + RLS
-```
+- `/login` is the public login/signup page.
+- Unauthenticated visits to dashboard routes are redirected to `/login` by `middleware.ts`.
+- Authenticated visits to `/login` are redirected to `/dashboard`.
+- A visible **ออกจากระบบ** button is available in the top bar and in **ตั้งค่า → การเข้าสู่ระบบ**.
+- Logout clears the local Supabase session and the active-project browser state.
 
-## หมายเหตุด้านความปลอดภัย
-
-- ห้ามใช้ `SUPABASE_SERVICE_ROLE_KEY` ใน Client Component
-- เอกสารผู้เช่า/สลิปควรใช้ private storage bucket + signed URL
-- Transaction สำคัญ เช่น ยืนยัน payment, check-out, ปรับยอด invoice ควรทำผ่าน server action/route handler และบันทึก audit log
-
-## UI refresh (v0.2)
-
-เวอร์ชันนี้ปรับหน้าตาใหม่ให้ใกล้ production SaaS มากขึ้น โดยยังคงโครงสร้าง Next.js/Supabase เดิม:
-
-- Sidebar ใหม่ พร้อม active state, portfolio card และ occupancy progress
-- Topbar แบบ glass / project switcher / global search placeholder
-- Dashboard hero ใหม่ พร้อม KPI และ quick actions
-- Stat cards, chart, occupancy card และ activity list ใหม่
-- Room cards เปลี่ยนจาก emoji เป็น CSS room illustration
-- Project cards, tables, maintenance board และ settings ปรับ spacing / typography / hover state
-- Login page แบบ split-screen สำหรับ desktop และ responsive mobile
-- Mobile bottom navigation และ responsive layout ปรับใหม่
-- ใช้ design tokens กลางใน `app/globals.css` เพื่อเปลี่ยนสี/รัศมี/เงาได้ง่าย
+After deploying this version, set the Supabase **Site URL** to the production Vercel URL under Authentication → URL Configuration.
