@@ -77,3 +77,7 @@ This build includes explicit Supabase Auth route protection:
 - Logout clears the local Supabase session and the active-project browser state.
 
 After deploying this version, set the Supabase **Site URL** to the production Vercel URL under Authentication → URL Configuration.
+
+## Typography update
+
+This build increases typography across the entire web app for better readability on desktop and mobile. Small UI labels, navigation, forms, tables, cards, dialogs, and mobile navigation have all been enlarged. Mobile form controls use a 16px base size to improve legibility and avoid unwanted browser zoom.
