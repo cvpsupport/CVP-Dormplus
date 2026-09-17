@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient as createUserClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { requirePropertyAccess } from '@/lib/access-control';
 import { dispatchNotification } from '@/lib/notifications';
 
 export async function POST(request: NextRequest) {
@@ -11,16 +10,15 @@ export async function POST(request: NextRequest) {
   const message = String(body.body || '').trim();
   if (!propertyId || !title || !message) return NextResponse.json({ error: 'ข้อมูลแจ้งเตือนไม่ครบ' }, { status: 400 });
 
-  const userClient = await createUserClient();
-  const admin = createAdminClient();
-  if (!userClient || !admin) return NextResponse.json({ error: 'Supabase server credentials are not configured' }, { status: 500 });
-  const { data: authData } = await userClient.auth.getUser();
-  const user = authData.user;
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const { data: member } = await admin.from('property_members').select('role').eq('property_id', propertyId).eq('user_id', user.id).maybeSingle();
-  if (!member) return NextResponse.json({ error: 'ไม่มีสิทธิ์เข้าถึงโครงการนี้' }, { status: 403 });
+  const requiredPermission = eventKey === 'maintenance_new'
+    ? 'maintenance.create'
+    : eventKey === 'meter_anomaly'
+      ? 'meters.record'
+      : 'notifications.manage';
+  const auth = await requirePropertyAccess(propertyId, requiredPermission);
+  if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const result = await dispatchNotification(admin, {
+  const result = await dispatchNotification(auth.admin, {
     propertyId,
     eventKey,
     title,

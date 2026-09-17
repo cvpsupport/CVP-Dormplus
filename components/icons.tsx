@@ -26,6 +26,7 @@ export function Icon({ name, size = 20 }: IconProps) {
     arrowup: <><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></>,
     receipt: <><path d="M6 3h12v18l-2-1.5L14 21l-2-1.5L10 21l-2-1.5L6 21V3Z"/><path d="M9 8h6M9 12h6M9 16h4"/></>,
     clock: <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>,
+    refresh: <><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M18.2 9A7 7 0 0 0 6.1 6.6L4 9"/><path d="M5.8 15A7 7 0 0 0 17.9 17.4L20 15"/></>,
     check: <><path d="m5 12 4 4L19 6"/></>,
     shield: <><path d="M12 3 4.5 6v5c0 4.6 3.1 8.8 7.5 10 4.4-1.2 7.5-5.4 7.5-10V6L12 3Z"/><path d="m9 12 2 2 4-4"/></>,
     meter: <><path d="M5 4h14v16H5z"/><path d="M8 8h8M9 15h6"/><circle cx="12" cy="12" r="2"/></>,

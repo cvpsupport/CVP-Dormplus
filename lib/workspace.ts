@@ -42,10 +42,52 @@ export function useWorkspace(options: { requireAuth?: boolean } = {}) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
+  const [accessLoading, setAccessLoading] = useState(false);
   const [userName, setUserName] = useState('ผู้ใช้งาน');
   const [properties, setProperties] = useState<WorkspaceProperty[]>([]);
   const [activePropertyId, setActivePropertyId] = useState<string | null>(null);
+  const [permissions, setPermissions] = useState<string[]>([]);
+  const [roleName, setRoleName] = useState('ผู้ใช้งานระบบ');
+  const [roleKey, setRoleKey] = useState('');
+  const [isOwner, setIsOwner] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const loadAccess = useCallback(async (propertyId: string | null) => {
+    if (!supabase || !propertyId) {
+      setPermissions([]);
+      setRoleName('ผู้ใช้งานระบบ');
+      setRoleKey('');
+      setIsOwner(false);
+      return;
+    }
+    setAccessLoading(true);
+    const [{ data: permData, error: permError }, { data: roleData, error: roleError }] = await Promise.all([
+      supabase.rpc('get_my_property_permissions', { p_property_id: propertyId }),
+      supabase.rpc('get_my_property_role', { p_property_id: propertyId }),
+    ]);
+    if (permError || roleError) {
+      // Backward-compatible fallback before migration 010 is applied.
+      const { data: member } = await supabase
+        .from('property_members')
+        .select('role')
+        .eq('property_id', propertyId)
+        .maybeSingle();
+      const legacyRole = String(member?.role || '');
+      setRoleKey(legacyRole);
+      setRoleName(legacyRole ? legacyRole.charAt(0).toUpperCase() + legacyRole.slice(1) : 'ผู้ใช้งานระบบ');
+      setIsOwner(legacyRole === 'owner');
+      setPermissions(legacyRole === 'owner' ? ['*'] : []);
+      setAccessLoading(false);
+      return;
+    }
+    const list = (permData || []).map((row: { permission_key: string }) => row.permission_key);
+    const role = Array.isArray(roleData) ? roleData[0] : null;
+    setPermissions(list);
+    setRoleName(role?.role_name || 'ผู้ใช้งานระบบ');
+    setRoleKey(role?.role_key || '');
+    setIsOwner(Boolean(role?.is_owner));
+    setAccessLoading(false);
+  }, [supabase]);
 
   const refresh = useCallback(async () => {
     if (!supabase) {
@@ -82,29 +124,39 @@ export function useWorkspace(options: { requireAuth?: boolean } = {}) {
     const selected = (stored && list.some(p => p.id === stored)) ? stored : (list[0]?.id || null);
     if (selected) window.localStorage.setItem(STORAGE_KEY, selected);
     setActivePropertyId(selected);
+    await loadAccess(selected);
     setError(null);
     setLoading(false);
-  }, [requireAuth, router, supabase]);
+  }, [requireAuth, router, supabase, loadAccess]);
 
   useEffect(() => { void refresh(); }, [refresh]);
 
   useEffect(() => {
     const handler = (event: Event) => {
       const custom = event as CustomEvent<string>;
-      if (custom.detail) setActivePropertyId(custom.detail);
+      if (custom.detail) {
+        setActivePropertyId(custom.detail);
+        void loadAccess(custom.detail);
+      }
     };
     window.addEventListener(EVENT_NAME, handler);
     return () => window.removeEventListener(EVENT_NAME, handler);
-  }, []);
+  }, [loadAccess]);
 
   const setActive = useCallback((id: string) => {
     setStoredPropertyId(id);
     setActivePropertyId(id);
-  }, []);
+    void loadAccess(id);
+  }, [loadAccess]);
+
+  const can = useCallback((permission: string) => {
+    return isOwner || permissions.includes('*') || permissions.includes(permission);
+  }, [isOwner, permissions]);
 
   return {
     supabase,
     loading,
+    accessLoading,
     error,
     userName,
     properties,
@@ -112,5 +164,11 @@ export function useWorkspace(options: { requireAuth?: boolean } = {}) {
     activeProperty: properties.find(p => p.id === activePropertyId) || null,
     setActivePropertyId: setActive,
     refresh,
+    permissions,
+    roleName,
+    roleKey,
+    isOwner,
+    can,
+    loadAccess,
   };
 }

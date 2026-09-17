@@ -44,6 +44,7 @@ export function EmptyState({ title, description, action }: { title: string; desc
   return <div className="crud-empty"><div className="crud-empty-icon"><Icon name="project" size={26}/></div><b>{title}</b><span>{description}</span>{action}</div>;
 }
 
-export function CrudMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
-  return <div className="crud-actions"><button type="button" onClick={onEdit}>แก้ไข</button><button type="button" className="danger-link" onClick={onDelete}>ลบ</button></div>;
+export function CrudMenu({ onEdit, onDelete, canEdit = true, canDelete = true }: { onEdit: () => void; onDelete: () => void; canEdit?: boolean; canDelete?: boolean }) {
+  if (!canEdit && !canDelete) return null;
+  return <div className="crud-actions">{canEdit && <button type="button" onClick={onEdit}>แก้ไข</button>}{canDelete && <button type="button" className="danger-link" onClick={onDelete}>ลบ</button>}</div>;
 }

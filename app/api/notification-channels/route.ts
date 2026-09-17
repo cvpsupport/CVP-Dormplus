@@ -1,22 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient as createUserClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { requirePropertyAccess } from '@/lib/access-control';
 
 const supported = new Set(['inapp', 'line', 'discord', 'telegram']);
 
-async function authProperty(propertyId: string, ownerOnly = false) {
-  const userClient = await createUserClient();
-  const admin = createAdminClient();
-  if (!userClient || !admin) return { error: 'Supabase server credentials are not configured', status: 500 } as const;
-  const { data: authData } = await userClient.auth.getUser();
-  const user = authData.user;
-  if (!user) return { error: 'Unauthorized', status: 401 } as const;
-  const query = admin.from('property_members').select('role').eq('property_id', propertyId).eq('user_id', user.id).maybeSingle();
-  const { data: member, error } = await query;
-  if (error || !member) return { error: 'ไม่มีสิทธิ์เข้าถึงโครงการนี้', status: 403 } as const;
-  if (ownerOnly && member.role !== 'owner') return { error: 'เฉพาะ Owner เท่านั้นที่แก้ไขช่องทางแจ้งเตือนได้', status: 403 } as const;
-  return { user, admin, role: member.role } as const;
+async function authProperty(propertyId: string, manage = false) {
+  return requirePropertyAccess(propertyId, manage ? 'notifications.manage' : 'notifications.view');
 }
+
 
 export async function GET(request: NextRequest) {
   const propertyId = request.nextUrl.searchParams.get('propertyId') || '';

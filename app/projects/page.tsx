@@ -72,7 +72,7 @@ export default function ProjectsPage() {
   const occupancy = totalRooms ? Math.round(occupied/totalRooms*100) : 0;
 
   return <AppShell>
-    <PageTitle title="โครงการ" subtitle="ข้อมูลจริงจาก Supabase — เพิ่ม แก้ไข และลบโครงการได้" action={<button className="primary-btn" onClick={createNew}><Icon name="plus" size={18}/> เพิ่มโครงการ</button>}/>
+    <PageTitle title="โครงการ" subtitle="ข้อมูลจริงจาก Supabase — เพิ่ม แก้ไข และลบโครงการได้" action={workspace.can('projects.manage')?<button className="primary-btn" onClick={createNew}><Icon name="plus" size={18}/> เพิ่มโครงการ</button>:undefined}/>
     <section className="stats-grid project-stats">
       <StatCard icon="project" label="โครงการทั้งหมด" value={`${projects.length} โครงการ`} note={`${active} โครงการเปิดให้บริการ`} />
       <StatCard icon="rooms" label="ห้องรวมทั้งหมด" value={`${totalRooms} ห้อง`} note={`มีผู้เช่า ${occupied} ห้อง`} tone="blue" />
@@ -80,7 +80,7 @@ export default function ProjectsPage() {
       <StatCard icon="finance" label="สถานะระบบ" value="Live Data" note="เชื่อม Supabase แล้ว" />
     </section>
     <div className="toolbar project-toolbar"><div className="search-box"><Icon name="search" size={17}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="ค้นหาชื่อโครงการ, รหัส, ทำเล..."/></div></div>
-    {!workspace.loading && !filtered.length ? <EmptyState title="ยังไม่มีโครงการ" description="สร้างโครงการแรกเพื่อเริ่มเพิ่มห้อง ผู้เช่า และรายการต่าง ๆ" action={<button className="primary-btn" onClick={createNew}><Icon name="plus" size={17}/> เพิ่มโครงการ</button>}/> :
+    {!workspace.loading && !filtered.length ? <EmptyState title="ยังไม่มีโครงการ" description="สร้างโครงการแรกเพื่อเริ่มเพิ่มห้อง ผู้เช่า และรายการต่าง ๆ" action={workspace.can('projects.manage')?<button className="primary-btn" onClick={createNew}><Icon name="plus" size={17}/> เพิ่มโครงการ</button>:undefined}/> :
     <section className="projects-grid">{filtered.map(project=>{
       const rate = project.room_count ? Math.round((project.occupied_count||0)/(project.room_count||1)*100) : 0;
       return <article className="project-card" key={project.id}>
@@ -90,7 +90,7 @@ export default function ProjectsPage() {
           <div className="project-location"><Icon name="map" size={15}/><span>{project.address||'ยังไม่ระบุที่อยู่'}</span></div>
           <div className="project-kpis"><div><span>ห้องทั้งหมด</span><b>{project.room_count||0}</b></div><div><span>มีผู้เช่า</span><b>{project.occupied_count||0}</b></div><div><span>อัตราเข้าพัก</span><b>{rate}%</b></div></div>
           <div className="occupancy-progress-head"><span>อัตราเข้าพัก</span><strong>{rate}%</strong></div><div className="progress-track"><i style={{width:`${rate}%`}}/></div>
-          <div className="project-foot"><CrudMenu onEdit={()=>editProject(project)} onDelete={()=>void removeProject(project)}/><Link className="project-detail-btn" href={`/projects/${project.id}`}>ดูโครงการ <Icon name="chevron" size={15}/></Link></div>
+          <div className="project-foot"><CrudMenu canEdit={workspace.can('projects.manage')} canDelete={workspace.isOwner} onEdit={()=>editProject(project)} onDelete={()=>void removeProject(project)}/><Link className="project-detail-btn" href={`/projects/${project.id}`}>ดูโครงการ <Icon name="chevron" size={15}/></Link></div>
         </div>
       </article>})}</section>}
 

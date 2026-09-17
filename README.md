@@ -117,3 +117,25 @@ Vercel Cron เรียก `/api/cron/notifications` ทุกวัน 08:00 �
 ## Building filters
 
 เพิ่มฟิลเตอร์ **อาคาร** ในหน้าห้องพัก, ผู้เช่า, การเงินและการชำระ, แจ้งซ่อม และมิเตอร์น้ำ/ไฟแล้ว โดย KPI/รายการบนหน้าเหล่านี้จะเปลี่ยนตามอาคารที่เลือก และตัวเลือกจะรีเซ็ตเมื่อสลับโครงการ
+
+## Discord meter photo capture
+
+รองรับการจดมิเตอร์จาก Discord Slash Commands:
+
+```text
+/water room:102 photo:[รูป]
+/electric room:102 photo:[รูป]
+```
+
+รัน `supabase/migrations/008_discord_meter_capture.sql` แล้วดูขั้นตอนใน `DISCORD_METER_SETUP.md`.
+
+## Discord meter approval workflow
+
+Discord meter capture now uses **manual reading + photo evidence + manager approval**. Staff run `/water room:102 reading:1239 photo:[รูป]` or `/electric ...`. The submitted number is not written to `meter_readings` until an Owner/Manager approves it from the meter page. No AI/OCR API is required. Run migration `009_discord_manual_meter_approval.sql`.
+
+## Users / Roles / Permissions
+
+เพิ่มเมนู **ผู้ใช้ / Role / สิทธิ์** สำหรับจัดการสมาชิกแบบแยกตามโครงการ สร้าง Custom Role กำหนด Permission รายโมดูล และบังคับสิทธิ์ด้วย Supabase RLS
+
+ก่อนใช้งานให้รัน `supabase/migrations/010_users_roles_permissions.sql` และดูรายละเอียดที่ `ACCESS_CONTROL_SETUP.md`
+
