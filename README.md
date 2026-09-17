@@ -104,3 +104,16 @@ CRON_SECRET=<random-long-secret>
 หน้า **ตั้งค่า** รองรับ In-App, LINE Official Account Messaging API, Discord Incoming Webhook และ Telegram Bot API. Secrets ถูกเก็บใน `notification_channel_secrets` ซึ่ง authenticated client อ่านไม่ได้; Route Handlers ฝั่ง Server ใช้ `SUPABASE_SERVICE_ROLE_KEY` ในการส่งข้อความ
 
 Vercel Cron เรียก `/api/cron/notifications` ทุกวัน 08:00 น. เวลาไทย (01:00 UTC) เพื่อตรวจใบแจ้งหนี้ใกล้ครบกำหนดและสัญญาใกล้หมดอายุ
+
+## Meter building filter
+
+หน้า `มิเตอร์น้ำ / ไฟ` มีฟิลเตอร์ **อาคาร** เพิ่มแล้ว:
+- เลือกทุกอาคารหรืออาคารใดอาคารหนึ่ง
+- จำนวนห้องใน KPI จะเปลี่ยนตามอาคารที่เลือก
+- ยอดใช้น้ำ / ใช้ไฟ / ค่าน้ำไฟรวม จะคำนวณตามอาคารที่เลือก
+- ช่องค้นหายังใช้ร่วมกับฟิลเตอร์อาคารได้
+- Responsive บนมือถือ
+
+## Building filters
+
+เพิ่มฟิลเตอร์ **อาคาร** ในหน้าห้องพัก, ผู้เช่า, การเงินและการชำระ, แจ้งซ่อม และมิเตอร์น้ำ/ไฟแล้ว โดย KPI/รายการบนหน้าเหล่านี้จะเปลี่ยนตามอาคารที่เลือก และตัวเลือกจะรีเซ็ตเมื่อสลับโครงการ

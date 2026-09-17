@@ -1,3 +1,1 @@
-DormPlus v0.6 Meter Menu
-Must contain sidebar menu: มิเตอร์น้ำ / ไฟ
-Route: /meters
+meter-building-filter-2026-09-17

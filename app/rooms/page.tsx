@@ -19,6 +19,7 @@ export default function RoomsPage(){
   const [buildings,setBuildings]=useState<Building[]>([]);
   const [search,setSearch]=useState('');
   const [filter,setFilter]=useState('all');
+  const [buildingFilter,setBuildingFilter]=useState('');
   const [open,setOpen]=useState(false);
   const [editing,setEditing]=useState<Room|null>(null);
   const [form,setForm]=useState(emptyForm);
@@ -35,7 +36,7 @@ export default function RoomsPage(){
     if(error) setToast({message:error.message,tone:'error'}); else setRooms((r||[]) as Room[]);
     setBuildings((b||[]) as Building[]);
   }
-  useEffect(()=>{ void load(); },[workspace.activePropertyId]);
+  useEffect(()=>{ setBuildingFilter(''); void load(); },[workspace.activePropertyId]);
 
   function createNew(){ setEditing(null); setForm(emptyForm); setOpen(true); }
   function editRoom(r:Room){ setEditing(r); setForm({room_number:r.room_number,floor_number:String(r.floor_number||1),monthly_rent:String(r.monthly_rent),deposit_amount:String(r.deposit_amount),size_sqm:String(r.size_sqm||''),status:r.status,building_id:r.building_id||''}); setOpen(true); }
@@ -46,12 +47,13 @@ export default function RoomsPage(){
     setSaving(false);
   }
   async function remove(r:Room){ if(!workspace.supabase||!window.confirm(`ลบห้อง ${r.room_number} ออกจากรายการ? ประวัติเดิมจะยังถูกเก็บไว้`))return; const {error}=await workspace.supabase.from('rooms').update({archived_at:new Date().toISOString(),status:'inactive'}).eq('id',r.id); if(error)setToast({message:error.message,tone:'error'}); else {setToast({message:'ลบห้องออกจากรายการแล้ว',tone:'success'});await load();}}
-  const filtered=rooms.filter(r=>(filter==='all'||r.status===filter)&&r.room_number.toLowerCase().includes(search.toLowerCase()));
-  const occupied=rooms.filter(r=>r.status==='occupied').length, vacant=rooms.filter(r=>r.status==='vacant').length;
+  const buildingRooms=buildingFilter?rooms.filter(r=>r.building_id===buildingFilter):rooms;
+  const filtered=buildingRooms.filter(r=>(filter==='all'||r.status===filter)&&r.room_number.toLowerCase().includes(search.toLowerCase()));
+  const occupied=buildingRooms.filter(r=>r.status==='occupied').length, vacant=buildingRooms.filter(r=>r.status==='vacant').length;
 
   return <AppShell>
     <PageTitle title="จัดการห้องพัก" subtitle={workspace.activeProperty?`โครงการ ${workspace.activeProperty.name}`:'สร้างโครงการก่อนเพิ่มห้อง'} action={<button className="primary-btn" onClick={createNew} disabled={!workspace.activePropertyId}><Icon name="plus" size={18}/> เพิ่มห้อง</button>}/>
-    <div className="toolbar"><div className="search-box"><Icon name="search" size={17}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="ค้นหาเลขห้อง..."/></div><div className="filter-pills"><button className={filter==='all'?'active':''} onClick={()=>setFilter('all')}>ทั้งหมด {rooms.length}</button><button className={filter==='occupied'?'active':''} onClick={()=>setFilter('occupied')}>มีผู้เช่า {occupied}</button><button className={filter==='vacant'?'active':''} onClick={()=>setFilter('vacant')}>ว่าง {vacant}</button></div></div>
+    <div className="toolbar"><div className="meter-filter-group"><div className="search-box"><Icon name="search" size={17}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="ค้นหาเลขห้อง..."/></div><label className="building-filter"><Icon name="project" size={17}/><span>อาคาร</span><select value={buildingFilter} onChange={e=>setBuildingFilter(e.target.value)}><option value="">ทุกอาคาร ({rooms.length})</option>{buildings.map(b=><option key={b.id} value={b.id}>{b.name} ({rooms.filter(r=>r.building_id===b.id).length})</option>)}</select><Icon name="chevron-down" size={15}/></label></div><div className="filter-pills"><button className={filter==='all'?'active':''} onClick={()=>setFilter('all')}>ทั้งหมด {buildingRooms.length}</button><button className={filter==='occupied'?'active':''} onClick={()=>setFilter('occupied')}>มีผู้เช่า {occupied}</button><button className={filter==='vacant'?'active':''} onClick={()=>setFilter('vacant')}>ว่าง {vacant}</button></div></div>
     {!workspace.activePropertyId ? <EmptyState title="ยังไม่มีโครงการ" description="ไปที่เมนูโครงการแล้วสร้างโครงการแรกก่อน"/> : !filtered.length ? <EmptyState title="ยังไม่มีห้องพัก" description="กดเพิ่มห้องเพื่อเริ่มบันทึกข้อมูลจริง" action={<button className="primary-btn" onClick={createNew}><Icon name="plus" size={17}/> เพิ่มห้อง</button>}/> :
     <div className="rooms-grid">{filtered.map((r,i)=><article className="room-card" key={r.id}>
       <div className={`room-photo room-style-${i%3}`}><Badge tone={tone[r.status]||'gray'}>{label[r.status]||r.status}</Badge><div className="room-scene" aria-hidden="true"><div className="scene-window"><i/><i/></div><div className="scene-bed"><i/><span/></div><div className="scene-table"/><div className="scene-plant"><i/><i/><i/></div></div><div className="room-number-watermark">{r.room_number}</div></div>
