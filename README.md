@@ -139,3 +139,21 @@ Discord meter capture now uses **manual reading + photo evidence + manager appro
 
 ก่อนใช้งานให้รัน `supabase/migrations/010_users_roles_permissions.sql` และดูรายละเอียดที่ `ACCESS_CONTROL_SETUP.md`
 
+
+## v0.11 Full PMS operations
+
+Run `supabase/migrations/011_full_pms_operations.sql` after migration 010.
+
+Added operational modules:
+- Billing periods / monthly closing
+- Automatic invoice generation from rent + approved meter readings
+- Payments / allocations / receipt issuance
+- Deposit ledger
+- Check-out workflow
+- Expense management
+- Financial & occupancy reports + CSV export
+- Document registry
+- Audit log viewer
+- Tenant portal foundation
+
+See `FULL_PMS_SETUP.md`.

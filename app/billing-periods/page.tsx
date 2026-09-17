@@ -1,0 +1,18 @@
+'use client';
+import {useEffect,useState} from 'react';
+import {AppShell} from '@/components/app-shell';
+import {PageTitle,Badge,StatCard} from '@/components/ui';
+import {useWorkspace} from '@/lib/workspace';
+import {Icon} from '@/components/icons';
+
+type Period={id:string;period_start:string;period_end:string;due_date:string;status:string;billed_at:string|null;closed_at:string|null;notes:string|null};
+const tone:Record<string,string>={open:'blue',meter_review:'amber',ready_to_bill:'amber',billed:'green',closed:'gray'};
+const label:Record<string,string>={open:'เปิดงวด',meter_review:'รอตรวจมิเตอร์',ready_to_bill:'พร้อมออกบิล',billed:'ออกบิลแล้ว',closed:'ปิดงวด'};
+export default function Page(){const w=useWorkspace();const [rows,setRows]=useState<Period[]>([]);const [msg,setMsg]=useState('');
+ async function load(){if(!w.supabase||!w.activePropertyId)return;const {data,error}=await w.supabase.from('billing_periods').select('*').eq('property_id',w.activePropertyId).order('period_start',{ascending:false});if(error)setMsg(error.message);else setRows((data||[]) as Period[])}
+ useEffect(()=>{void load()},[w.activePropertyId]);
+ async function create(){if(!w.supabase||!w.activePropertyId)return;const now=new Date();const start=new Date(now.getFullYear(),now.getMonth(),1);const end=new Date(now.getFullYear(),now.getMonth()+1,0);const due=new Date(now.getFullYear(),now.getMonth()+1,w.activeProperty?.due_day||5);const fmt=(d:Date)=>d.toISOString().slice(0,10);const {error}=await w.supabase.from('billing_periods').insert({property_id:w.activePropertyId,period_start:fmt(start),period_end:fmt(end),due_date:fmt(due),status:'open'});setMsg(error?.message||'สร้างรอบบิลแล้ว');await load()}
+ async function generate(id:string){if(!w.supabase)return;const {data,error}=await w.supabase.rpc('generate_invoices_for_period',{p_period_id:id});setMsg(error?.message||`สร้างใบแจ้งหนี้ ${data||0} รายการแล้ว`);await load()}
+ async function close(id:string){if(!w.supabase||!confirm('ปิดรอบบิลนี้? หลังปิดควรแก้ย้อนหลังเฉพาะผู้มีสิทธิ์เท่านั้น'))return;const {error}=await w.supabase.rpc('close_billing_period',{p_period_id:id});setMsg(error?.message||'ปิดรอบบิลแล้ว');await load()}
+ const open=rows.filter(x=>x.status!=='closed').length;const closed=rows.filter(x=>x.status==='closed').length;
+ return <AppShell><PageTitle title="รอบบิล" subtitle="จดมิเตอร์ → ตรวจสอบ → ออกบิล → รับชำระ → ปิดงวด" action={w.can('periods.manage')?<button className="primary-btn" onClick={create}><Icon name="plus" size={17}/> สร้างรอบเดือนนี้</button>:undefined}/>{msg&&<div className="connection-alert"><span>{msg}</span></div>}<section className="stats-grid compact"><StatCard icon="calendar" label="รอบทั้งหมด" value={String(rows.length)} note="รอบบิลในโครงการ"/><StatCard icon="clock" label="ยังไม่ปิด" value={String(open)} note="กำลังดำเนินการ" tone="amber"/><StatCard icon="check" label="ปิดแล้ว" value={String(closed)} note="ล็อกงวดแล้ว" tone="blue"/></section><section className="panel table-panel"><div className="table-wrap"><table><thead><tr><th>รอบ</th><th>ช่วงวันที่</th><th>ครบกำหนด</th><th>สถานะ</th><th>การทำงาน</th></tr></thead><tbody>{rows.map(r=><tr key={r.id}><td><b>{r.period_start.slice(0,7)}</b></td><td>{r.period_start} – {r.period_end}</td><td>{r.due_date}</td><td><Badge tone={tone[r.status]||'gray'}>{label[r.status]||r.status}</Badge></td><td><div style={{display:'flex',gap:8,flexWrap:'wrap'}}>{w.can('periods.manage')&&r.status!=='closed'&&<button className="secondary-btn" onClick={()=>generate(r.id)}>ออกบิลอัตโนมัติ</button>}{w.can('periods.manage')&&r.status==='billed'&&<button className="secondary-btn" onClick={()=>close(r.id)}>ปิดงวด</button>}</div></td></tr>)}</tbody></table></div></section></AppShell>}

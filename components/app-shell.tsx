@@ -14,13 +14,23 @@ const mainNav: NavItem[] = [
   ['/rooms', 'ห้องพัก', 'rooms', 'rooms.view'],
   ['/tenants', 'ผู้เช่า', 'users', 'tenants.view'],
   ['/meters', 'มิเตอร์น้ำ / ไฟ', 'meter', 'meters.view'],
-  ['/billing', 'การเงิน', 'finance', 'billing.view'],
+  ['/billing-periods', 'รอบบิล', 'calendar', 'periods.view'],
+  ['/billing', 'ใบแจ้งหนี้', 'finance', 'billing.view'],
+  ['/payments', 'รับชำระ / ใบเสร็จ', 'receipt', 'payments.view'],
+  ['/deposits', 'เงินประกัน', 'shield', 'deposits.view'],
+  ['/checkouts', 'ย้ายออก / Check-out', 'logout', 'checkout.view'],
+  ['/expenses', 'ค่าใช้จ่าย', 'finance', 'expenses.view'],
   ['/maintenance', 'แจ้งซ่อม', 'wrench', 'maintenance.view'],
+  ['/reports', 'รายงาน', 'chart', 'reports.view'],
+  ['/documents', 'เอกสาร', 'contract', 'documents.view'],
 ];
 
 const systemNav: NavItem[] = [
   ['/notifications', 'แจ้งเตือน', 'bell', 'notifications.view'],
   ['/users', 'ผู้ใช้ / Role / สิทธิ์', 'shield', 'users.view'],
+  ['/audit', 'Audit Log', 'clock', 'audit.view'],
+  ['/data-tools', 'นำเข้า / ส่งออก', 'refresh', 'data.view'],
+  ['/portal', 'Tenant Portal', 'users', 'portal.view'],
   ['/settings', 'ตั้งค่า', 'settings', 'settings.view'],
 ];
 
@@ -29,7 +39,8 @@ const mobileNav: NavItem[] = [
   ['/projects', 'โครงการ', 'project', 'projects.view'],
   ['/rooms', 'ห้อง', 'rooms', 'rooms.view'],
   ['/meters', 'มิเตอร์', 'meter', 'meters.view'],
-  ['/billing', 'การเงิน', 'finance', 'billing.view'],
+  ['/billing-periods', 'รอบบิล', 'calendar', 'periods.view'],
+  ['/payments', 'รับเงิน', 'receipt', 'payments.view'],
   ['/maintenance', 'ซ่อม', 'wrench', 'maintenance.view'],
   ['/users', 'สิทธิ์', 'shield', 'users.view'],
 ];
@@ -96,7 +107,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="sidebar-progress"><i style={{width: workspace.properties.length ? '82%' : '0%'}}/></div>
           {workspace.can('projects.view') && <Link className="sidebar-card-link" href="/projects">จัดการโครงการ <Icon name="chevron" size={14}/></Link>}
         </div>
-        <div className="sidebar-foot">DormPlus <b>v0.10 RBAC</b><br/><span>Supabase · Vercel</span></div>
+        <div className="sidebar-foot">DormPlus <b>v0.11 Full PMS</b><br/><span>Supabase · Vercel</span></div>
       </aside>
 
       <main className="main">

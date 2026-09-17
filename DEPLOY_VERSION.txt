@@ -1,1 +1,1 @@
-v0.10-users-roles-permissions
+v0.11-full-pms
