@@ -157,3 +157,17 @@ Added operational modules:
 - Tenant portal foundation
 
 See `FULL_PMS_SETUP.md`.
+
+## v0.12 — Backup / Restore จากหน้าเว็บ
+
+เพิ่มเมนู `Backup / Restore` สำหรับ Owner/Role ที่มีสิทธิ์ `backup.view` และ `backup.manage`:
+
+- สร้าง Application Backup ของข้อมูลธุรกิจในโครงการ
+- เลือกรวม Private files: `dormplus-documents` และ `meter-photos`
+- เก็บ Snapshot ใน private bucket `dormplus-backups`
+- ดาวน์โหลด JSON Backup เก็บนอกระบบได้
+- Restore จากหน้าเว็บ โดยสร้าง Safety Backup ให้อัตโนมัติก่อนทุกครั้ง
+- Restore/Delete จำกัดเฉพาะ Owner เพื่อป้องกันความเสียหาย
+- User/Role, Auth passwords, Integration secrets, notification history และ Audit Log ไม่ถูกย้อนกลับ
+
+ก่อนใช้ให้รัน `supabase/migrations/012_web_backup_restore.sql`

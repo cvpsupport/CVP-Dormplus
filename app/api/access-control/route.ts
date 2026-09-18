@@ -46,6 +46,7 @@ function normalizePermissions(input: string[]) {
     'users.manage':'users.view',
     'roles.manage':'roles.view',
     'settings.manage':'settings.view',
+    'backup.manage':'backup.view',
   };
   for (const [key, view] of Object.entries(viewDependencies)) if (set.has(key)) set.add(view);
   return Array.from(set);

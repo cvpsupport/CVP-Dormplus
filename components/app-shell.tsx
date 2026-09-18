@@ -31,6 +31,7 @@ const systemNav: NavItem[] = [
   ['/audit', 'Audit Log', 'clock', 'audit.view'],
   ['/data-tools', 'นำเข้า / ส่งออก', 'refresh', 'data.view'],
   ['/portal', 'Tenant Portal', 'users', 'portal.view'],
+  ['/backup', 'Backup / Restore', 'refresh', 'backup.view'],
   ['/settings', 'ตั้งค่า', 'settings', 'settings.view'],
 ];
 
@@ -107,7 +108,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="sidebar-progress"><i style={{width: workspace.properties.length ? '82%' : '0%'}}/></div>
           {workspace.can('projects.view') && <Link className="sidebar-card-link" href="/projects">จัดการโครงการ <Icon name="chevron" size={14}/></Link>}
         </div>
-        <div className="sidebar-foot">DormPlus <b>v0.11 Full PMS</b><br/><span>Supabase · Vercel</span></div>
+        <div className="sidebar-foot">DormPlus <b>v0.12 Backup Center</b><br/><span>Supabase · Vercel</span></div>
       </aside>
 
       <main className="main">
